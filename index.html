@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小工具合集</title>
+  <link rel="icon" href="cat.ico" type="image/x-icon">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    #search { width: 100%; padding: 10px; margin-bottom: 20px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+    .tool-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .tool {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      background: #fafafa;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-align: center;
+    }
+    .tool:hover { transform: translateY(-4px); box-shadow: 2px 4px 16px rgba(0, 0, 0, 0.25); border: 1px solid rgba(238, 12, 151, 0.5); border-radius: 4px; }
+    .tool h3 { margin: 0 0 10px; font-size: 18px; }
+    .tool p { margin: 0 0 10px; color: #666; font-size: 14px; }
+    .tool a { text-decoration: none; color: #0078d7; font-weight: bold; display: inline-block; margin-top: 10px; }
+    @media (max-width: 500px) {
+      .tool-list { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <h1>🔧 小工具合集</h1>
+  <input type="text" id="search" placeholder="搜索工具..." oninput="filterTools()">
+  <div id="toolList" class="tool-list"></div>
+
+  <script>
+    const emojis = ['📅','⏳','📊','🔢','🛠','⚡','📝','💡','🧮','🖥']; // 随机图标库
+    const REMOTE_JSON_URL = 'http://qiniu-public.cloudtides.cn/littleTools/tools.json?v=3'; // 远程 JSON 链接
+    const CACHE_KEY = 'toolsCache';
+    const CACHE_TTL = 60 * 60 * 1000; // 缓存有效期 1 小时
+
+    async function loadTools() {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        const now = Date.now();
+
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (now - data.timestamp < CACHE_TTL) {
+            window.allTools = data.tools;
+            renderTools(data.tools);
+            // 继续后台刷新最新数据
+            fetchToolsRemote();
+            return;
+          }
+        }
+        // 无缓存或缓存过期
+        fetchToolsRemote();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('toolList').innerHTML = "<p>❌ 无法加载工具列表</p>";
+      }
+    }
+
+    async function fetchToolsRemote() {
+      try {
+        const res = await fetch(REMOTE_JSON_URL);
+        const tools = await res.json();
+        window.allTools = tools;
+        renderTools(tools);
+        // 存缓存
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ tools, timestamp: Date.now() }));
+      } catch (err) {
+        console.error(err);
+        if (!window.allTools) {
+          document.getElementById('toolList').innerHTML = "<p>❌ 无法加载工具列表</p>";
+        }
+      }
+    }
+
+    function renderTools(tools) {
+      const container = document.getElementById('toolList');
+      container.innerHTML = "";
+      tools.forEach(tool => {
+        const div = document.createElement('div');
+        const link_url = tool.url || tool.path;
+        div.className = 'tool';
+        div.innerHTML = `
+          <h3>${tool.name}</h3>
+          <p>${tool.desc}</p>
+          <a href="${link_url}">进入工具 ➝</a>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function filterTools() {
+      const keyword = document.getElementById('search').value.toLowerCase();
+      const filtered = window.allTools.filter(t => 
+        t.name.toLowerCase().includes(keyword) || 
+        t.desc.toLowerCase().includes(keyword)
+      );
+      renderTools(filtered);
+    }
+
+    loadTools();
+  </script>
+</body>
+</html>

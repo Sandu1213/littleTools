@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间戳与日期转换工具</title>
+    <script src="https://cdn.tailwindcss.com  "></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css  " rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#6366F1',
+                        neutral: '#F3F4F6',
+                        dark: '#1F2937',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+            .input-focus {
+                @apply focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter text-dark min-h-screen flex flex-col">
+    <!-- 页面标题 -->
+    <header class="bg-white shadow-sm py-6">
+        <div class="container mx-auto px-4 md:px-6">
+            <h1 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-center text-gray-800">时间戳与日期转换工具</h1>
+            <p class="text-center text-gray-500 mt-2">轻松在Unix时间戳和人类可读日期之间进行转换</p>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="flex-grow container mx-auto px-4 md:px-6 py-8">
+        <div class="max-w-2xl mx-auto bg-white rounded-xl p-6 md:p-8 card-shadow">
+            <!-- 时间单位选择 -->
+            <div class="flex items-center mb-8 border-b pb-4">
+                <div class="flex space-x-1 mr-6">
+                    <button id="nanoseconds" class="px-4 py-2 rounded-l-md bg-gray-100 hover:bg-gray-200 transition-all-300 text-sm font-medium">
+                        纳秒
+                    </button>
+                    <button id="milliseconds" class="px-4 py-2 bg-primary text-white hover:bg-primary/90 transition-all-300 text-sm font-medium">
+                        毫秒
+                    </button>
+                    <button id="seconds" class="px-4 py-2 rounded-r-md bg-gray-100 hover:bg-gray-200 transition-all-300 text-sm font-medium">
+                        秒
+                    </button>
+                </div>
+                
+                <div class="flex items-center ml-auto">
+                    <select id="timezone" class="bg-gray-100 border-0 rounded-md px-3 py-2 text-sm input-focus">
+                        <option value="8">UTC+08:00 | 北京</option>
+                        <option value="0">UTC±00:00 | 协调世界时</option>
+                        <option value="-5">UTC-05:00 | 纽约</option>
+                        <option value="1">UTC+01:00 | 伦敦</option>
+                        <option value="9">UTC+09:00 | 东京</option>
+                    </select>
+                    <button class="ml-3 text-gray-500 hover:text-gray-700 transition-all-300">
+                        <i class="fa fa-info-circle text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 日期转时间戳 -->
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold mb-3 text-gray-700">日期 → 时间戳</h2>
+                <div class="flex items-center">
+                    <input type="datetime-local" id="date-to-timestamp" class="flex-grow px-4 py-3 border border-gray-300 rounded-l-lg input-focus text-gray-700" />
+                    <button id="convert-date" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-r-lg transition-all-300">
+                        <i class="fa fa-arrow-right mr-1"></i> 转换
+                    </button>
+                </div>
+                <div id="date-result" class="mt-3 p-3 bg-gray-50 rounded-lg hidden"></div>
+            </div>
+
+            <hr class="my-6 border-gray-200" />
+
+            <!-- 时间戳转日期 -->
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold mb-3 text-gray-700">时间戳 → 日期</h2>
+                <div class="flex items-center">
+                    <input type="text" id="timestamp-to-date" placeholder="请输入时间戳" class="flex-grow px-4 py-3 border border-gray-300 rounded-l-lg input-focus text-gray-700" />
+                    <button id="convert-timestamp" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-r-lg transition-all-300">
+                        <i class="fa fa-arrow-right mr-1"></i> 转换
+                    </button>
+                </div>
+                <div id="timestamp-result" class="mt-3 p-3 bg-gray-50 rounded-lg hidden"></div>
+            </div>
+
+            <hr class="my-6 border-gray-200" />
+
+            <!-- 当前时间戳 -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold mb-2 text-gray-700">当前时间戳</h2>
+                    <div id="current-timestamp" class="text-xl font-mono bg-gray-100 px-4 py-3 rounded-lg text-gray-800"></div>
+                </div>
+                <div class="mt-4 md:mt-0 flex space-x-3">
+                    <button id="toggle-update" class="flex items-center px-4 py-2 border border-red-500 text-red-500 hover:bg-red-50 rounded-lg transition-all-300">
+                        <i class="fa fa-pause mr-2"></i> 暂停
+                    </button>
+                    <button id="reset-data" class="flex items-center px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg transition-all-300">
+                        <i class="fa fa-refresh mr-2"></i> 重置数据
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t mt-12 py-6">
+        <div class="container mx-auto px-4 md:px-6 text-center text-gray-500 text-sm">
+            <p>时间戳转换工具 &copy; 2025</p>
+            <a href="../index.html" style="font-size:16px;" >⬅ 返回首页</a>
+        </div>
+    </footer>
+
+    <script>
+        // 全局变量
+        let timeUnit = 'milliseconds'; // 默认毫秒
+        let isUpdating = true;
+        let updateInterval;
+
+        // DOM 元素
+        const nanosecondsBtn = document.getElementById('nanoseconds');
+        const millisecondsBtn = document.getElementById('milliseconds');
+        const secondsBtn = document.getElementById('seconds');
+        const timezoneSelect = document.getElementById('timezone');
+        const dateInput = document.getElementById('date-to-timestamp');
+        const timestampInput = document.getElementById('timestamp-to-date');
+        const convertDateBtn = document.getElementById('convert-date');
+        const convertTimestampBtn = document.getElementById('convert-timestamp');
+        const dateResult = document.getElementById('date-result');
+        const timestampResult = document.getElementById('timestamp-result');
+        const currentTimestampEl = document.getElementById('current-timestamp');
+        const toggleUpdateBtn = document.getElementById('toggle-update');
+        const resetDataBtn = document.getElementById('reset-data');
+
+        // 初始化
+        function init() {
+            // 设置默认日期为当前日期时间
+            const now = new Date();
+            const localISOString = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            dateInput.value = localISOString;
+            
+            // 开始更新当前时间戳
+            updateCurrentTimestamp();
+            startUpdating();
+            
+            // 事件监听
+            setupEventListeners();
+        }
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 时间单位选择
+            nanosecondsBtn.addEventListener('click', () => setTimeUnit('nanoseconds'));
+            millisecondsBtn.addEventListener('click', () => setTimeUnit('milliseconds'));
+            secondsBtn.addEventListener('click', () => setTimeUnit('seconds'));
+            
+            // 转换按钮
+            convertDateBtn.addEventListener('click', convertDateToTimestamp);
+            convertTimestampBtn.addEventListener('click', convertTimestampToDate);
+            
+            // 输入框回车事件
+            dateInput.addEventListener('keypress', (e) => e.key === 'Enter' && convertDateToTimestamp());
+            timestampInput.addEventListener('keypress', (e) => e.key === 'Enter' && convertTimestampToDate());
+            
+            // 暂停/继续更新
+            toggleUpdateBtn.addEventListener('click', toggleUpdate);
+            
+            // 重置数据
+            resetDataBtn.addEventListener('click', resetData);
+            
+            // 时区变化 - 触发所有相关刷新
+            timezoneSelect.addEventListener('change', () => {
+                updateCurrentTimestamp();
+                refreshAllConvertedResults();
+            });
+        }
+
+        // 设置时间单位
+        function setTimeUnit(unit) {
+            timeUnit = unit;
+            
+            // 更新按钮样式
+            [nanosecondsBtn, millisecondsBtn, secondsBtn].forEach(btn => {
+                btn.classList.remove('bg-primary', 'text-white', 'bg-gray-100');
+                btn.classList.add('bg-gray-100');
+            });
+            
+            if (unit === 'nanoseconds') {
+                nanosecondsBtn.classList.remove('bg-gray-100');
+                nanosecondsBtn.classList.add('bg-primary', 'text-white');
+            } else if (unit === 'milliseconds') {
+                millisecondsBtn.classList.remove('bg-gray-100');
+                millisecondsBtn.classList.add('bg-primary', 'text-white');
+            } else {
+                secondsBtn.classList.remove('bg-gray-100');
+                secondsBtn.classList.add('bg-primary', 'text-white');
+            }
+            
+            // 更新当前时间戳显示 + 刷新转换结果
+            updateCurrentTimestamp();
+            refreshAllConvertedResults();
+            // 重启更新计时器（适配单位对应的更新频率）
+            startUpdating();
+        }
+
+        // 刷新所有已转换的结果
+        function refreshAllConvertedResults() {
+            // 1. 如果日期输入框有值，重新转换日期→时间戳
+            if (dateInput.value.trim()) {
+                convertDateToTimestamp();
+            } else {
+                // 无输入时隐藏结果框
+                dateResult.classList.add('hidden');
+            }
+
+            // 2. 如果时间戳输入框有值，重新转换时间戳→日期
+            if (timestampInput.value.trim()) {
+                convertTimestampToDate();
+            } else {
+                // 无输入时隐藏结果框
+                timestampResult.classList.add('hidden');
+            }
+        }
+
+        // 计算基于当前单位和时区的时间戳（统一逻辑）
+        function calculateTimestamp(date) {
+            const timezoneOffset = parseInt(timezoneSelect.value) * 3600000; // 时区偏移（毫秒）
+            let baseTimestamp = date.getTime() - timezoneOffset; // 基础毫秒时间戳
+            
+            // 根据当前单位转换
+            if (timeUnit === 'nanoseconds') {
+                return baseTimestamp * 1000000;
+            } else if (timeUnit === 'seconds') {
+                return Math.floor(baseTimestamp / 1000);
+            }
+            return baseTimestamp; // 毫秒
+        }
+
+        // 解析输入的时间戳为毫秒（统一逻辑）
+        function parseToMilliseconds(inputTimestamp) {
+            let timestamp = parseFloat(inputTimestamp);
+            if (isNaN(timestamp)) return null;
+            
+            // 根据当前单位转换为毫秒
+            if (timeUnit === 'nanoseconds') {
+                return timestamp / 1000000;
+            } else if (timeUnit === 'seconds') {
+                return timestamp * 1000;
+            }
+            return timestamp; // 毫秒
+        }
+
+        // 日期转时间戳
+        function convertDateToTimestamp() {
+            const dateStr = dateInput.value;
+            if (!dateStr) {
+                showResult(dateResult, '请选择日期和时间', 'error');
+                return;
+            }
+            
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) {
+                    showResult(dateResult, '无效的日期格式', 'error');
+                    return;
+                }
+                
+                // 使用统一工具函数计算
+                const result = calculateTimestamp(date);
+                const unitText = timeUnit === 'nanoseconds' ? '纳秒' : timeUnit === 'seconds' ? '秒' : '毫秒';
+                
+                showResult(dateResult, `${unitText}时间戳: ${result}`, 'success');
+            } catch (error) {
+                showResult(dateResult, '转换失败: ' + error.message, 'error');
+            }
+        }
+
+        // 时间戳转日期
+        function convertTimestampToDate() {
+            const timestampStr = timestampInput.value.trim();
+            if (!timestampStr) {
+                showResult(timestampResult, '请输入时间戳', 'error');
+                return;
+            }
+            
+            try {
+                // 使用统一工具函数解析
+                const msTimestamp = parseToMilliseconds(timestampStr);
+                if (msTimestamp === null) {
+                    showResult(timestampResult, '无效的时间戳', 'error');
+                    return;
+                }
+                
+                // 考虑时区偏移
+                const timezoneOffset = parseInt(timezoneSelect.value) * 3600000;
+                const date = new Date(msTimestamp + timezoneOffset);
+                
+                // 格式化日期
+                const options = { 
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    hour12: false,
+                    timeZone: 'UTC'
+                };
+                const formattedDate = date.toLocaleString('zh-CN', options);
+                
+                showResult(timestampResult, `转换后的日期: ${formattedDate}`, 'success');
+            } catch (error) {
+                showResult(timestampResult, '转换失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示结果
+        function showResult(element, message, type) {
+            element.textContent = message;
+            element.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-green-50', 'text-green-700');
+            
+            if (type === 'error') {
+                element.classList.add('bg-red-50', 'text-red-700');
+            } else {
+                element.classList.add('bg-green-50', 'text-green-700');
+            }
+            
+            // 5秒后自动隐藏结果
+            clearTimeout(element.hideTimeout);
+            element.hideTimeout = setTimeout(() => {
+                element.classList.add('hidden');
+            }, 5000);
+        }
+
+        // 更新当前时间戳
+        function updateCurrentTimestamp() {
+            const now = new Date();
+            // 复用统一计算逻辑
+            const timestamp = calculateTimestamp(now);
+            currentTimestampEl.textContent = timestamp;
+        }
+
+        // 开始更新时间戳
+        function startUpdating() {
+            if (updateInterval) clearInterval(updateInterval);
+            
+            // 根据单位设置更新频率
+            const interval = timeUnit === 'nanoseconds' ? 10 : timeUnit === 'milliseconds' ? 100 : 1000;
+            updateInterval = setInterval(() => {
+                if (isUpdating) {
+                    updateCurrentTimestamp();
+                }
+            }, interval);
+        }
+
+        // 切换更新状态（暂停/继续）
+        function toggleUpdate() {
+            isUpdating = !isUpdating;
+            
+            if (isUpdating) {
+                toggleUpdateBtn.innerHTML = '<i class="fa fa-pause mr-2"></i> 暂停';
+                toggleUpdateBtn.classList.remove('border-green-500', 'text-green-500', 'hover:bg-green-50');
+                toggleUpdateBtn.classList.add('border-red-500', 'text-red-500', 'hover:bg-red-50');
+                updateCurrentTimestamp(); // 立即更新一次
+            } else {
+                toggleUpdateBtn.innerHTML = '<i class="fa fa-play mr-2"></i> 继续';
+                toggleUpdateBtn.classList.remove('border-red-500', 'text-red-500', 'hover:bg-red-50');
+                toggleUpdateBtn.classList.add('border-green-500', 'text-green-500', 'hover:bg-green-50');
+            }
+        }
+
+        // 重置数据 - 清空输入框数据（当前时间戳除外）
+        function resetData() {
+            // 重置输入框
+            const now = new Date();
+            const localISOString = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            dateInput.value = localISOString;
+            timestampInput.value = '';
+            
+            // 隐藏结果
+            dateResult.classList.add('hidden');
+            timestampResult.classList.add('hidden');
+            
+            // 如果处于暂停状态，切换到继续状态
+            if (!isUpdating) {
+                toggleUpdate();
+            }
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

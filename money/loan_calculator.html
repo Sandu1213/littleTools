@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贷款计算器 - 分页 & PDF导出</title>
+    <!-- 引入 jsPDF 和 html2canvas CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .form-section {
+            padding: 25px;
+            background: #f1f8ff;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        .form-section h1 {
+            margin-top: 0;
+            color: #0d6efd;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13,110,253,0.15);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #calculateBtn {
+            background: #0d6efd;
+            color: white;
+        }
+
+        #calculateBtn:hover {
+            background: #0b5ed7;
+        }
+
+        #exportPdfBtn {
+            background: #20c997;
+            color: white;
+        }
+
+        #exportPdfBtn:hover {
+            background: #198754;
+        }
+
+        #exportPdfBtn:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .result-section {
+            padding: 25px;
+            display: none;
+        }
+
+        .result-section h3 {
+            margin-top: 0;
+            color: #212529;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .pagination {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .pagination button {
+            background: #e9ecef;
+            color: #495057;
+            padding: 6px 12px;
+            margin: 0 5px;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #0d6efd;
+            color: white;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-area, .print-area * {
+                visibility: visible;
+            }
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 输入区域 -->
+        <div class="form-section">
+            <h1>贷款计算器</h1>
+            <div class="form-group">
+                <label for="loanAmount">贷款金额 (元):</label>
+                <input type="number" id="loanAmount" value="3000000" min="1" step="1000">
+            </div>
+            <div class="form-group">
+                <label for="annualRate">年利率 (%):</label>
+                <input type="number" id="annualRate" value="3.3" step="0.01" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label for="loanTerm">贷款期限 (年):</label>
+                <input type="number" id="loanTerm" value="20" min="1" max="30">
+            </div>
+            <div class="form-group">
+                <label for="repaymentType">还款方式:</label>
+                <select id="repaymentType">
+                    <option value="equal">等额本息</option>
+                    <option value="equalPrincipal">等额本金</option>
+                    <option value="interestFirst">先息后本</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button id="calculateBtn" onclick="calculateLoan()">计算</button>
+                <button id="exportPdfBtn" onclick="exportToPDF()" disabled>导出 PDF</button>
+            </div>
+        </div>
+
+        <!-- 输出区域 -->
+        <div class="result-section" id="resultSection">
+            <h3>还款计划</h3>
+            <div class="pagination" id="paginationControls"></div>
+            <div class="table-container" id="printArea">
+                <table id="repaymentTable">
+                    <thead>
+                        <tr>
+                            <th>期数</th>
+                            <th>还款日期</th>
+                            <th>月供金额</th>
+                            <th>本金</th>
+                            <th>利息</th>
+                            <th>剩余本金</th>
+                        </tr>
+                    </thead>
+                    <tbody id="repaymentBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentMonth = 0;
+        let totalMonths = 0;
+        let repaymentPlan = [];
+        let isCalculated = false;
+
+        // 初始化 jsPDF（兼容 ES6 模块）
+        const { jsPDF } = window.jspdf;
+
+        function calculateLoan() {
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+            const annualRate = parseFloat(document.getElementById('annualRate').value) / 100;
+            const loanTerm = parseInt(document.getElementById('loanTerm').value);
+            const repaymentType = document.getElementById('repaymentType').value;
+
+            if (!loanAmount || !annualRate || !loanTerm || loanAmount <= 0 || annualRate < 0 || loanTerm <= 0) {
+                alert("请填写有效的贷款信息！");
+                return;
+            }
+
+            totalMonths = loanTerm * 12;
+            repaymentPlan = [];
+            const startDate = new Date();
+
+            if (repaymentType === 'equal') {
+                const monthlyRate = annualRate / 12;
+                const monthlyPayment = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, totalMonths) /
+                    (Math.pow(1 + monthlyRate, totalMonths) - 1);
+
+                let remainingPrincipal = loanAmount;
+                for (let i = 1; i <= totalMonths; i++) {
+                    const interest = remainingPrincipal * monthlyRate;
+                    const principal = monthlyPayment - interest;
+                    remainingPrincipal = Math.max(0, remainingPrincipal - principal);
+                    const date = new Date(startDate);
+                    date.setMonth(date.getMonth() + i - 1);
+                    repaymentPlan.push({
+                        period: i,
+                        date: date.toLocaleDateString('zh-CN'),
+                        payment: monthlyPayment.toFixed(2),
+                        principal: principal.toFixed(2),
+                        interest: interest.toFixed(2),
+                        remaining: remainingPrincipal.toFixed(2)
+                    });
+                }
+            } else if (repaymentType === 'equalPrincipal') {
+                const monthlyPrincipal = loanAmount / totalMonths;
+                const monthlyRate = annualRate / 12;
+                let remainingPrincipal = loanAmount;
+                for (let i = 1; i <= totalMonths; i++) {
+                    const interest = remainingPrincipal * monthlyRate;
+                    const payment = monthlyPrincipal + interest;
+                    remainingPrincipal = Math.max(0, remainingPrincipal - monthlyPrincipal);
+                    const date = new Date(startDate);
+                    date.setMonth(date.getMonth() + i - 1);
+                    repaymentPlan.push({
+                        period: i,
+                        date: date.toLocaleDateString('zh-CN'),
+                        payment: payment.toFixed(2),
+                        principal: monthlyPrincipal.toFixed(2),
+                        interest: interest.toFixed(2),
+                        remaining: remainingPrincipal.toFixed(2)
+                    });
+                }
+            } else if (repaymentType === 'interestFirst') {
+                const monthlyInterest = loanAmount * (annualRate / 12);
+                let remainingPrincipal = loanAmount;
+                for (let i = 1; i <= totalMonths; i++) {
+                    const date = new Date(startDate);
+                    date.setMonth(date.getMonth() + i - 1);
+                    if (i < totalMonths) {
+                        repaymentPlan.push({
+                            period: i,
+                            date: date.toLocaleDateString('zh-CN'),
+                            payment: monthlyInterest.toFixed(2),
+                            principal: "0.00",
+                            interest: monthlyInterest.toFixed(2),
+                            remaining: remainingPrincipal.toFixed(2)
+                        });
+                    } else {
+                        const finalPayment = monthlyInterest + loanAmount;
+                        repaymentPlan.push({
+                            period: i,
+                            date: date.toLocaleDateString('zh-CN'),
+                            payment: finalPayment.toFixed(2),
+                            principal: loanAmount.toFixed(2),
+                            interest: monthlyInterest.toFixed(2),
+                            remaining: "0.00"
+                        });
+                    }
+                }
+            }
+
+            isCalculated = true;
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('exportPdfBtn').disabled = false;
+
+            currentMonth = 0;
+            renderPage();
+        }
+
+        function renderPage() {
+            const tbody = document.getElementById('repaymentBody');
+            tbody.innerHTML = '';
+
+            const start = currentMonth;
+            const end = Math.min(currentMonth + 12, totalMonths);
+
+            for (let i = start; i < end; i++) {
+                const item = repaymentPlan[i];
+                const row = `<tr>
+                    <td>${item.period}</td>
+                    <td>${item.date}</td>
+                    <td>¥${item.payment}</td>
+                    <td>¥${item.principal}</td>
+                    <td>¥${item.interest}</td>
+                    <td>¥${item.remaining}</td>
+                </tr>`;
+                tbody.insertAdjacentHTML('beforeend', row);
+            }
+
+            updatePaginationControls();
+        }
+
+        function updatePaginationControls() {
+            const controls = document.getElementById('paginationControls');
+            controls.innerHTML = '';
+
+            if (totalMonths <= 12) return;
+
+            const totalPages = Math.ceil(totalMonths / 12);
+            const currentPage = Math.floor(currentMonth / 12) + 1;
+
+            let html = '';
+            if (currentPage > 1) {
+                html += `<button onclick="prevPage()">上一页</button>`;
+            }
+            html += `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+            if (currentPage < totalPages) {
+                html += `<button onclick="nextPage()">下一页</button>`;
+            }
+
+            controls.innerHTML = html;
+        }
+
+        function prevPage() {
+            if (currentMonth >= 12) {
+                currentMonth -= 12;
+                renderPage();
+            }
+        }
+
+        function nextPage() {
+            if (currentMonth + 12 < totalMonths) {
+                currentMonth += 12;
+                renderPage();
+            }
+        }
+
+        // 导出 PDF 功能
+        async function exportToPDF() {
+            if (!isCalculated) return;
+
+            if (confirm("请选择导出当前页（12个月）还是全部还款计划？\n点击“确定”导出全部，“取消”仅导出当前页。")) {
+                // 导出全部
+                await exportFullPDF();
+            } else {
+                // 导出当前页
+                await exportCurrentPagePDF();
+            }
+        }
+
+        async function exportCurrentPagePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const element = document.getElementById('printArea');
+
+            doc.setFontSize(16);
+            doc.text("Loan Repayment Plan (Current Page)", 14, 20);
+
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = 190;
+            const pageHeight = doc.internal.pageSize.height;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            doc.addImage(imgData, 'PNG', 10, 30, imgWidth, imgHeight);
+            doc.save('还款计划_当前页.pdf');
+        }
+
+        async function exportFullPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+
+            doc.setFontSize(16);
+            doc.text("Loan Repayment Plan (All)", 14, 20);
+
+            let y = 30;
+            const lineHeight = 8;
+            const colWidths = [20, 35, 35, 30, 30, 35]; // 列宽（mm）
+
+            // 表头
+            const headers = ["Term", "Date", "MonthlyPay", "Principal", "Interest", "Remaining"];
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            let x = 10;
+            headers.forEach((header, i) => {
+                doc.text(header, x, y);
+                x += colWidths[i];
+            });
+            y += lineHeight;
+
+            // 表格内容
+            doc.setFont(undefined, 'normal');
+            repaymentPlan.forEach((row, index) => {
+                if (y > pageHeight - 20) {
+                    doc.addPage();
+                    y = 20;
+                }
+                x = 10;
+                doc.text(row.period.toString(), x, y);
+                x += colWidths[0];
+                doc.text(row.date, x, y);
+                x += colWidths[1];
+                doc.text(`¥${row.payment}`, x, y);
+                x += colWidths[2];
+                doc.text(`¥${row.principal}`, x, y);
+                x += colWidths[3];
+                doc.text(`¥${row.interest}`, x, y);
+                x += colWidths[4];
+                doc.text(`¥${row.remaining}`, x, y);
+                y += lineHeight;
+            });
+
+            doc.save('还款计划_完整版.pdf');
+        }
+    </script>
+</body>
+</html>

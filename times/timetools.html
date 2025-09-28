@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日期时间工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                        neutral: '#1F2937',
+                        'neutral-light': '#F3F4F6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-neutral-light to-white min-h-screen font-sans text-neutral">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- 页面标题 -->
+        <header class="text-center mb-12">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-neutral mb-3 bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                日期时间工具
+            </h1>
+            <p class="text-gray-600 text-lg max-w-2xl mx-auto">
+                简洁实用的日期计算工具，包含年龄计算、日期差计算和倒计时功能
+            </p>
+        </header>
+        
+        <!-- 工具标签页导航 -->
+        <div class="flex flex-wrap justify-center mb-8 gap-2 md:gap-4">
+            <button id="age-calc-tab" class="tool-tab active px-5 py-3 rounded-full font-medium text-white bg-primary transition-all-300 flex items-center gap-2">
+                <i class="fa fa-birthday-cake"></i> 年龄计算
+            </button>
+            <button id="date-diff-tab" class="tool-tab px-5 py-3 rounded-full font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all-300 flex items-center gap-2">
+                <i class="fa fa-calendar-check-o"></i> 日期差计算
+            </button>
+            <button id="countdown-tab" class="tool-tab px-5 py-3 rounded-full font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all-300 flex items-center gap-2">
+                <i class="fa fa-clock-o"></i> 倒计时
+            </button>
+        </div>
+        
+        <!-- 工具内容区域 -->
+        <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-10">
+            <!-- 年龄计算工具 -->
+            <div id="age-calc-content" class="tool-content active">
+                <h2 class="text-2xl font-bold mb-6 text-primary flex items-center gap-2">
+                    <i class="fa fa-birthday-cake"></i> 年龄计算
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="birthdate" class="block text-gray-700 font-medium mb-2">出生日期</label>
+                            <input 
+                                type="date" 
+                                id="birthdate" 
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all-300"
+                            >
+                        </div>
+                        
+                        <button 
+                            id="calculate-age" 
+                            class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all-300 flex items-center justify-center gap-2 mt-4"
+                        >
+                            <i class="fa fa-calculator"></i> 计算年龄
+                        </button>
+                    </div>
+                    
+                    <div id="age-result" class="bg-neutral-light rounded-xl p-6 flex flex-col justify-center items-center text-center opacity-0 transition-all-300">
+                        <div class="text-4xl font-bold text-primary mb-2" id="age-years">0</div>
+                        <div class="text-gray-600 mb-4">岁</div>
+                        
+                        <div class="grid grid-cols-3 gap-4 w-full mt-6">
+                            <div class="bg-white p-3 rounded-lg card-shadow">
+                                <div class="text-2xl font-bold text-neutral" id="age-total-years">0</div>
+                                <div class="text-gray-500 text-sm">总年数</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg card-shadow">
+                                <div class="text-2xl font-bold text-neutral" id="age-months">0</div>
+                                <div class="text-gray-500 text-sm">月</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg card-shadow">
+                                <div class="text-2xl font-bold text-neutral" id="age-days">0</div>
+                                <div class="text-gray-500 text-sm">天</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 日期差计算工具 -->
+            <div id="date-diff-content" class="tool-content hidden">
+                <h2 class="text-2xl font-bold mb-6 text-secondary flex items-center gap-2">
+                    <i class="fa fa-calendar-check-o"></i> 日期差计算
+                </h2>
+                
+                <div class="space-y-6">
+                    <div class="bg-neutral-light p-4 rounded-lg">
+                        <h3 class="font-medium mb-3">计算日期距今天的天数</h3>
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <input 
+                                type="date" 
+                                id="single-date" 
+                                class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition-all-300"
+                            >
+                            <button 
+                                id="calculate-single-date" 
+                                class="bg-secondary hover:bg-secondary/90 text-white font-medium py-3 px-6 rounded-lg transition-all-300 flex items-center justify-center gap-2 whitespace-nowrap"
+                            >
+                                <i class="fa fa-calculator"></i> 计算距今天数
+                            </button>
+                        </div>
+                        <div id="single-date-result" class="mt-4 p-3 bg-white rounded-lg hidden">
+                            <p class="text-center text-lg" id="single-date-result-text"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-neutral-light p-4 rounded-lg">
+                        <h3 class="font-medium mb-3">计算两个日期之间的天数</h3>
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <input 
+                                type="date" 
+                                id="date1" 
+                                class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition-all-300"
+                                placeholder="开始日期"
+                            >
+                            <span class="flex items-center text-gray-500">至</span>
+                            <input 
+                                type="date" 
+                                id="date2" 
+                                class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition-all-300"
+                                placeholder="结束日期"
+                            >
+                            <button 
+                                id="calculate-date-diff" 
+                                class="bg-secondary hover:bg-secondary/90 text-white font-medium py-3 px-6 rounded-lg transition-all-300 flex items-center justify-center gap-2 whitespace-nowrap"
+                            >
+                                <i class="fa fa-calculator"></i> 计算日期差
+                            </button>
+                        </div>
+                        <div id="date-diff-result" class="mt-4 p-3 bg-white rounded-lg hidden">
+                            <p class="text-center text-lg" id="date-diff-result-text"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 倒计时工具 -->
+            <div id="countdown-content" class="tool-content hidden">
+                <h2 class="text-2xl font-bold mb-6 text-accent flex items-center gap-2">
+                    <i class="fa fa-clock-o"></i> 倒计时
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="target-date" class="block text-gray-700 font-medium mb-2">目标日期时间</label>
+                            <input 
+                                type="datetime-local" 
+                                id="target-date" 
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all-300"
+                            >
+                        </div>
+                        
+                        <div class="flex gap-4">
+                            <button 
+                                id="start-countdown" 
+                                class="flex-1 bg-accent hover:bg-accent/90 text-white font-medium py-3 px-6 rounded-lg transition-all-300 flex items-center justify-center gap-2"
+                            >
+                                <i class="fa fa-play"></i> 开始倒计时
+                            </button>
+                            <button 
+                                id="stop-countdown" 
+                                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-all-300 flex items-center justify-center gap-2"
+                                disabled
+                            >
+                                <i class="fa fa-stop"></i> 停止
+                            </button>
+                        </div>
+                        
+                        <div id="countdown-message" class="mt-4 p-4 rounded-lg hidden"></div>
+                    </div>
+                    
+                    <div id="countdown-display" class="bg-neutral-light rounded-xl p-6 flex flex-col justify-center items-center opacity-0 transition-all-300">
+                        <div class="text-center mb-4">
+                            <p class="text-gray-600" id="countdown-target-text">请设置目标日期时间</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-4 gap-3 w-full">
+                            <div class="bg-white p-3 rounded-lg card-shadow text-center">
+                                <div class="text-3xl font-bold text-neutral" id="countdown-days">00</div>
+                                <div class="text-gray-500 text-sm">天</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg card-shadow text-center">
+                                <div class="text-3xl font-bold text-neutral" id="countdown-hours">00</div>
+                                <div class="text-gray-500 text-sm">时</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg card-shadow text-center">
+                                <div class="text-3xl font-bold text-neutral" id="countdown-minutes">00</div>
+                                <div class="text-gray-500 text-sm">分</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg card-shadow text-center">
+                                <div class="text-3xl font-bold text-neutral" id="countdown-seconds">00</div>
+                                <div class="text-gray-500 text-sm">秒</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 页脚 -->
+        <footer class="text-center text-gray-500 text-sm py-4">
+            
+            <p>© 2025 日期时间工具 | 一个简洁实用的前端工具应用</p></br>
+            <a href="../index.html" style="font-size:16px;" >⬅ 返回首页</a>
+        </footer>
+    </div>
+
+    
+    <!-- 时间到提示模态框 -->
+    <div id="time-up-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center transform transition-all-300 scale-95 opacity-0" id="modal-content">
+            <div class="text-6xl text-accent mb-4">
+                <i class="fa fa-bell"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-2">时间到！</h3>
+            <p class="text-gray-600 mb-6" id="time-up-message">目标时间已到达</p>
+            <button id="close-modal" class="bg-accent hover:bg-accent/90 text-white font-medium py-3 px-6 rounded-lg transition-all-300">
+                确定
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // 全局变量
+        let countdownInterval = null;
+        
+        // DOM 加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认日期（今天）
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('single-date').value = today;
+            
+            // 设置默认目标日期为明天此时
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowISO = tomorrow.toISOString().slice(0, 16);
+            document.getElementById('target-date').value = tomorrowISO;
+            
+            // 标签页切换功能
+            const toolTabs = document.querySelectorAll('.tool-tab');
+            const toolContents = document.querySelectorAll('.tool-content');
+            
+            toolTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 移除所有标签页的活动状态
+                    toolTabs.forEach(t => {
+                        t.classList.remove('active', 'bg-primary', 'text-white');
+                        t.classList.add('bg-gray-100', 'text-gray-600');
+                    });
+                    
+                    // 添加当前标签页的活动状态
+                    this.classList.add('active', 'bg-primary', 'text-white');
+                    this.classList.remove('bg-gray-100', 'text-gray-600');
+                    
+                    // 隐藏所有内容
+                    toolContents.forEach(content => {
+                        content.classList.add('hidden');
+                        content.classList.remove('active');
+                    });
+                    
+                    // 显示对应内容
+                    const contentId = this.id.replace('-tab', '-content');
+                    const activeContent = document.getElementById(contentId);
+                    activeContent.classList.remove('hidden');
+                    activeContent.classList.add('active');
+                    
+                    // 根据内容类型设置标签颜色
+                    if (contentId === 'age-calc-content') {
+                        this.classList.remove('bg-secondary', 'bg-accent');
+                        this.classList.add('bg-primary');
+                    } else if (contentId === 'date-diff-content') {
+                        this.classList.remove('bg-primary', 'bg-accent');
+                        this.classList.add('bg-secondary');
+                    } else if (contentId === 'countdown-content') {
+                        this.classList.remove('bg-primary', 'bg-secondary');
+                        this.classList.add('bg-accent');
+                    }
+                });
+            });
+            
+            // 年龄计算功能
+            document.getElementById('calculate-age').addEventListener('click', calculateAge);
+            document.getElementById('birthdate').addEventListener('change', calculateAge);
+            
+            // 日期差计算功能
+            document.getElementById('calculate-single-date').addEventListener('click', calculateSingleDateDiff);
+            document.getElementById('single-date').addEventListener('change', calculateSingleDateDiff);
+            
+            document.getElementById('calculate-date-diff').addEventListener('click', calculateTwoDateDiff);
+            document.getElementById('date1').addEventListener('change', calculateTwoDateDiff);
+            document.getElementById('date2').addEventListener('change', calculateTwoDateDiff);
+            
+            // 倒计时功能
+            document.getElementById('start-countdown').addEventListener('click', startCountdown);
+            document.getElementById('stop-countdown').addEventListener('click', stopCountdown);
+            
+            // 模态框关闭按钮
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+        });
+        
+        // 计算年龄
+        function calculateAge() {
+            const birthdateInput = document.getElementById('birthdate');
+            const birthdate = new Date(birthdateInput.value);
+            
+            if (isNaN(birthdate.getTime())) {
+                return; // 无效日期
+            }
+            
+            const today = new Date();
+            
+            // 计算年龄（年、月、日）
+            let years = today.getFullYear() - birthdate.getFullYear();
+            let months = today.getMonth() - birthdate.getMonth();
+            let days = today.getDate() - birthdate.getDate();
+            
+            // 调整月份和年份
+            if (days < 0) {
+                months--;
+                // 获取上个月的天数
+                const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                days += lastMonth.getDate();
+            }
+            
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            
+            // 计算总天数
+            const totalDays = Math.floor((today - birthdate) / (1000 * 60 * 60 * 24));
+            const totalYears = totalDays / 365.25;
+            
+            // 显示结果
+            const ageResult = document.getElementById('age-result');
+            ageResult.style.opacity = '1';
+            
+            document.getElementById('age-years').textContent = years;
+            document.getElementById('age-total-years').textContent = totalYears.toFixed(1);
+            document.getElementById('age-months').textContent = months;
+            document.getElementById('age-days').textContent = days;
+        }
+        
+        // 计算单个日期与今天的差值
+        function calculateSingleDateDiff() {
+            const dateInput = document.getElementById('single-date');
+            const targetDate = new Date(dateInput.value);
+            
+            if (isNaN(targetDate.getTime())) {
+                return; // 无效日期
+            }
+            
+            // 设置为当天的午夜
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            targetDate.setHours(0, 0, 0, 0);
+            
+            const diffTime = targetDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // 显示结果
+            const resultContainer = document.getElementById('single-date-result');
+            const resultText = document.getElementById('single-date-result-text');
+            
+            resultContainer.classList.remove('hidden');
+            
+            if (diffDays === 0) {
+                resultText.textContent = '今天';
+            } else if (diffDays > 0) {
+                resultText.textContent = `距离 ${formatDate(targetDate)} 还有 ${diffDays} 天`;
+            } else {
+                resultText.textContent = `${formatDate(targetDate)} 已经过去 ${Math.abs(diffDays)} 天`;
+            }
+        }
+        
+        // 计算两个日期之间的差值
+        function calculateTwoDateDiff() {
+            const date1Input = document.getElementById('date1');
+            const date2Input = document.getElementById('date2');
+            
+            const date1 = new Date(date1Input.value);
+            const date2 = new Date(date2Input.value);
+            
+            if (isNaN(date1.getTime()) || isNaN(date2.getTime())) {
+                return; // 无效日期
+            }
+            
+            // 设置为当天的午夜
+            date1.setHours(0, 0, 0, 0);
+            date2.setHours(0, 0, 0, 0);
+            
+            const diffTime = Math.abs(date2 - date1);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // 显示结果
+            const resultContainer = document.getElementById('date-diff-result');
+            const resultText = document.getElementById('date-diff-result-text');
+            
+            resultContainer.classList.remove('hidden');
+            resultText.textContent = `${formatDate(date1)} 和 ${formatDate(date2)} 之间相差 ${diffDays} 天`;
+        }
+        
+        // 开始倒计时
+        function startCountdown() {
+            // 停止任何正在进行的倒计时
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            const targetDateTimeInput = document.getElementById('target-date');
+            const targetDateTime = new Date(targetDateTimeInput.value);
+            
+            if (isNaN(targetDateTime.getTime())) {
+                showCountdownMessage('请选择有效的目标日期时间', 'error');
+                return;
+            }
+            
+            const now = new Date();
+            
+            if (targetDateTime <= now) {
+                showCountdownMessage('目标日期时间必须在当前时间之后', 'error');
+                return;
+            }
+            
+            // 显示倒计时区域
+            const countdownDisplay = document.getElementById('countdown-display');
+            countdownDisplay.style.opacity = '1';
+            
+            // 更新目标时间文本
+            document.getElementById('countdown-target-text').textContent = `距离 ${formatDateTime(targetDateTime)}`;
+            
+            // 隐藏消息
+            hideCountdownMessage();
+            
+            // 更新按钮状态
+            document.getElementById('start-countdown').disabled = true;
+            document.getElementById('start-countdown').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stop-countdown').disabled = false;
+            document.getElementById('stop-countdown').classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            // 立即更新一次
+            updateCountdown(targetDateTime);
+            
+            // 设置定时器每秒更新一次
+            countdownInterval = setInterval(() => {
+                updateCountdown(targetDateTime);
+            }, 1000);
+        }
+        
+        // 更新倒计时显示
+        function updateCountdown(targetDateTime) {
+            const now = new Date();
+            const diffTime = targetDateTime - now;
+            
+            // 如果目标时间已到
+            if (diffTime <= 0) {
+                stopCountdown();
+                showTimeUpModal(targetDateTime);
+                return;
+            }
+            
+            // 计算天、时、分、秒
+            const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diffTime % (1000 * 60)) / 1000);
+            
+            // 更新显示
+            document.getElementById('countdown-days').textContent = days.toString().padStart(2, '0');
+            document.getElementById('countdown-hours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+        }
+        
+        // 停止倒计时
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            // 更新按钮状态
+            document.getElementById('start-countdown').disabled = false;
+            document.getElementById('start-countdown').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stop-countdown').disabled = true;
+            document.getElementById('stop-countdown').classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        
+        // 显示倒计时消息
+        function showCountdownMessage(text, type = 'info') {
+            const messageElement = document.getElementById('countdown-message');
+            messageElement.textContent = text;
+            messageElement.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+            
+            if (type === 'error') {
+                messageElement.classList.add('bg-red-100', 'text-red-800');
+            } else {
+                messageElement.classList.add('bg-green-100', 'text-green-800');
+            }
+        }
+        
+        // 隐藏倒计时消息
+        function hideCountdownMessage() {
+            const messageElement = document.getElementById('countdown-message');
+            messageElement.classList.add('hidden');
+        }
+        
+        // 显示时间到模态框
+        function showTimeUpModal(targetDateTime) {
+            const modal = document.getElementById('time-up-modal');
+            const modalContent = document.getElementById('modal-content');
+            const messageElement = document.getElementById('time-up-message');
+            
+            messageElement.textContent = `目标时间 ${formatDateTime(targetDateTime)} 已到达`;
+            
+            modal.classList.remove('hidden');
+            // 触发动画
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            const modal = document.getElementById('time-up-modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        
+        // 格式化日期为 年-月-日
+        function formatDate(date) {
+            return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+        }
+        
+        // 格式化日期时间为 年-月-日 时:分
+        function formatDateTime(date) {
+            return `${formatDate(date)} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+    </script>
+</body>
+</html>
+    
