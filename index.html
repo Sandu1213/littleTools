@@ -65,50 +65,7 @@
     async function fetchToolsRemote() {
       try {
         const res = await fetch(REMOTE_JSON_URL);
-        // const tools = await res.json();
-        const tools = [
-          {
-            "name": " ⏳ 时间助手",
-            "desc": "年龄、日期差和倒计时计算工具",
-            "path": "times/timetools.html"
-          },
-          {
-            "name": " 🛠️ JSON 格式化工具",
-            "desc": "JSON 格式化和压缩工具",
-            "path": "devtools/index.html"
-          },
-          {
-            "name": " 🖼️ 图片小助手",
-            "desc": "拼图、长图小助手",
-            "url": "https://imgtools-sandy.vercel.app/"
-          },
-          {
-            "name": " 😁 Emoji图标",
-            "desc": "Emoji图标集合",
-            "url": "https://emoji.muan.co/#"
-          },
-          {
-            "name": " ⏱️ 时间戳转换工具",
-            "desc": "时间戳转换工具",
-            "url": "times/timestamp.html"
-          },
-          {
-            "name": " 💰 利率小助手",
-            "desc": "贷款利率(先息后本/等额本金/等额本息)",
-            "url": "money/loan_calculator.html"
-          },
-          {
-            "name": " 🔊 噪音分析器",
-            "desc": "根据提供的视频及音频文件进行检测及切片",
-            "url": "https://checkaudio.cloudtides.cn"
-          },
-          {
-            "name": " 💵 大乐透",
-            "desc": "超级翻倍~超级幸运!go~",
-            "url": "fun/daletou.html"
-          }
-
-        ];
+        const tools = await res.json();
         window.allTools = tools;
         renderTools(tools);
         // 存缓存
