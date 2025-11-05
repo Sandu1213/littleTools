@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>大乐透号码生成器（学习用途）</title>
+  <style>
+    body {
+      font-family: "Microsoft YaHei", sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #d32f2f;
+    }
+    .controls {
+      text-align: center;
+      margin: 20px 0;
+    }
+    label {
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    select, button {
+      padding: 8px 16px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin: 5px;
+    }
+    button {
+      background-color: #1976d2;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1565c0;
+    }
+    #exportBtn {
+      background-color: #388e3c;
+    }
+    #exportBtn:hover {
+      background-color: #2e7d32;
+    }
+    .result {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-top: 20px;
+      white-space: pre-line;
+      font-family: monospace;
+      line-height: 1.6;
+    }
+    .disclaimer {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #888;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>体育彩票 · 大乐透号码生成器</h1>
+
+  <div class="controls">
+    <label for="count">生成注数：</label>
+    <select id="count">
+      <option value="1">1 注</option>
+      <option value="2">2 注</option>
+      <option value="3">3 注</option>
+      <option value="5" selected>5 注</option>
+      <option value="10">10 注</option>
+    </select>
+    <br>
+    <button onclick="generate()">生成号码</button>
+    <button id="exportBtn" onclick="exportToText()" disabled>导出为文本</button>
+  </div>
+
+  <div id="result" class="result">点击“生成号码”开始</div>
+
+  <div class="disclaimer">
+    ⚠️ 本工具仅用于学习编程知识，不构成任何购彩建议。<br>
+    彩票结果完全随机，请理性娱乐，切勿沉迷。<br><br>
+    <a href="../index.html" style="font-size:16px;" >⬅ 返回首页</a>
+  </div>
+
+  <script>
+    // 全局变量：保存当前生成的原始数据（用于导出）
+    let currentResults = [];
+
+    // 工具函数：从指定范围生成不重复的随机号码
+    function getRandomUniqueNumbers(min, max, count) {
+      const range = [];
+      for (let i = min; i <= max; i++) {
+        range.push(i);
+      }
+      const numbers = [];
+      for (let i = 0; i < count; i++) {
+        const randomIndex = Math.floor(Math.random() * range.length);
+        numbers.push(range.splice(randomIndex, 1)[0]);
+      }
+      return numbers.sort((a, b) => a - b);
+    }
+
+    function formatNumber(num) {
+      return num.toString().padStart(2, '0');
+    }
+
+    function generateDaletou() {
+      const front = getRandomUniqueNumbers(1, 35, 5);
+      const back = getRandomUniqueNumbers(1, 12, 2);
+      const frontStr = front.map(formatNumber).join(' ');
+      const backStr = back.map(formatNumber).join(' ');
+      return `${frontStr} + ${backStr}`;
+    }
+
+    // 生成多注（返回带编号的数组，用于显示和导出）
+    function generateMultipleDaletou(n) {
+      const results = [];
+      for (let i = 0; i < n; i++) {
+        results.push(generateDaletou());
+      }
+      return results;
+    }
+
+    // 生成并显示
+    function generate() {
+      const count = parseInt(document.getElementById('count').value);
+      currentResults = generateMultipleDaletou(count);
+
+      // 格式化显示（带编号）
+      const displayText = currentResults
+        .map((line, index) => `${index + 1}. ${line}`)
+        .join('\n');
+
+      document.getElementById('result').textContent = displayText;
+      document.getElementById('exportBtn').disabled = false; // 启用导出按钮
+    }
+
+    // 导出为文本文件
+    function exportToText() {
+      if (currentResults.length === 0) return;
+
+      // 构建纯文本内容（不带编号，更干净）
+      const textContent = currentResults.join('\n');
+
+      // 创建文件名：daletou_YYYYMMDD_HHMMSS.txt
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const filename = `daletou_${year}${month}${day}_${hours}${minutes}${seconds}.txt`;
+
+      // 创建 Blob 和下载链接
+      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      // 清理
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
+  </script>
+</body>
+</html>
